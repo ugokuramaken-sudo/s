@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ターゲット1200</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+      color: #222;
+    }
+
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      background: white;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 28px;
+    }
+
+    .small {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .top {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 18px 0;
+    }
+
+    button {
+      border: none;
+      background: #222;
+      color: white;
+      padding: 11px 15px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    button:hover { opacity: 0.85; }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .secondary { background: #666; }
+    .danger { background: #a32620; }
+
+    .score {
+      font-weight: bold;
+      font-size: 18px;
+      margin-left: auto;
+    }
+
+    .saved-count {
+      font-size: 14px;
+      font-weight: 700;
+      color: #444;
+      background: #eee;
+      padding: 8px 10px;
+      border-radius: 999px;
+    }
+
+    .progress {
+      margin: 12px 0 18px;
+      background: #eee;
+      border-radius: 999px;
+      height: 14px;
+      overflow: hidden;
+    }
+
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: #222;
+      transition: width 0.2s;
+    }
+
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 18px;
+      padding: 22px;
+      background: #fff;
+      min-height: 330px;
+    }
+
+    .question-title {
+      font-size: 30px;
+      font-weight: 900;
+      margin-bottom: 6px;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .question-sub {
+      color: #555;
+      margin-bottom: 20px;
+      font-size: 16px;
+      text-align: center;
+    }
+
+    .mode-label {
+      display: inline-block;
+      background: #eee;
+      color: #333;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .choices {
+      display: grid;
+      grid-template-columns: repeat(1, 1fr);
+      gap: 10px;
+    }
+
+    .choice {
+      background: #f1f1f1;
+      color: #222;
+      border: 2px solid transparent;
+      padding: 13px 12px;
+      border-radius: 12px;
+      font-size: 17px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .choice.correct {
+      border-color: #1f9d55;
+      background: #e9f8ef;
+      color: #145c35;
+    }
+
+    .choice.wrong {
+      border-color: #d93025;
+      background: #fdecea;
+      color: #8a1c13;
+    }
+
+    .result {
+      margin-top: 18px;
+      min-height: 34px;
+      font-size: 22px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .ok { color: #1f9d55; }
+    .ng { color: #d93025; }
+
+    .next-area {
+      margin-top: 18px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .finish {
+      text-align: center;
+      font-size: 24px;
+      font-weight: 900;
+      line-height: 1.8;
+      padding: 30px 0 10px;
+    }
+
+    .wrong-list {
+      margin-top: 20px;
+      text-align: left;
+      font-size: 16px;
+      line-height: 1.8;
+      background: #fafafa;
+      border: 1px solid #ddd;
+      border-radius: 14px;
+      padding: 14px 18px;
+    }
+
+    .center { text-align: center; }
+
+    @media (max-width: 750px) {
+      .container { padding: 14px; }
+      .score {
+        margin-left: 0;
+        width: 100%;
+      }
+      .question-title { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>核心古文</h1>
+
+    <div class="top">
+    <input id="startRange" type="number" placeholder="開始" style="padding:8px">
+    <input id="endRange" type="number" placeholder="終了" style="padding:8px">
+      <button id="startBtn" onclick="startQuiz('all')">全問スタート</button>
+      <button id="wrongBtn" onclick="startQuiz('wrong')">間違えた場所だけテスト</button>
+      <button class="secondary" onclick="resetCurrentQuiz()">今のテストをリセット</button>
+      <button class="danger" onclick="clearWrongMemory()">ミス保存を消す</button>
+      <div class="score" id="score">0 / 20</div>
+      <div class="saved-count" id="savedCount">保存ミス 0</div>
+    </div>
+
+    <div class="progress">
+      <div class="bar" id="bar"></div>
+    </div>
+
+    <div class="card" id="card">
+      <div class="finish">スタートを押してください</div>
+    </div>
+  </div>
+
+  <script>
+    const SAVE_KEY = "kobunQuiz_1_20_Save_v2";
+    const WRONG_KEY = "kobunQuiz_1_20_Wrong_v2";
+
+ const originalQuestions = [
+{id:"1", word:"あく", answer:"十分満足する"},
+{id:"2", word:"おどろく", answer:"目を覚ます"},
+{id:"3", word:"ながむ", answer:"物思いに沈む"},
+{id:"4", word:"ねんず", answer:"我慢する"},
+{id:"5", word:"わぶ", answer:"思い嘆く"},
+{id:"6", word:"あくがる", answer:"離れさまよう"},
+{id:"7", word:"とぶらふ", answer:"見舞う"},
+{id:"8", word:"ののしる", answer:"大声で騒ぐ"},
+{id:"9", word:"ありく", answer:"歩き回る"},
+{id:"10", word:"まもる", answer:"じっと見つめる"},
+{id:"11", word:"わづらふ", answer:"苦しむ"},
+{id:"12", word:"なやむ", answer:"苦しむ"},
+{id:"13", word:"おこたる", answer:"なおる"},
+{id:"14", word:"あきらむ", answer:"明らかにする"},
+{id:"15", word:"かなし", answer:"かわいい"},
+{id:"16", word:"こころにくし", answer:"奥ゆかしい"},
+{id:"17", word:"うつくし", answer:"かわいらしい"},
+{id:"18", word:"めでたし", answer:"素晴らしい"},
+{id:"19", word:"なまめかし", answer:"優雅だ"},
+{id:"20", word:"ありがたし", answer:"めったにない"},
+{id:"21", word:"はづかし", answer:"立派だ"},
+{id:"22", word:"やさし", answer:"恥ずかしい"},
+{id:"23", word:"めづらし", answer:"素晴らしい"},
+{id:"24", word:"なつかし", answer:"親しみが持てる"},
+{id:"25", word:"おとなし", answer:"大人びている"},
+{id:"26", word:"さうざうし", answer:"物足りない"},
+{id:"27", word:"あぢきなし", answer:"おもしろくない"},
+{id:"28", word:"すさまじ", answer:"殺風景だ"},
+{id:"29", word:"あやし", answer:"不思議だ"},
+{id:"30", word:"あさまし", answer:"驚きあきれる"},
+{id:"31", word:"つらし", answer:"薄情だ"},
+{id:"32", word:"こころぐるし", answer:"つらい"},
+{id:"33", word:"わびし", answer:"つらい"},
+{id:"34", word:"あたらし", answer:"惜しい"},
+{id:"35", word:"うしろめたし", answer:"気がかりだ"},
+{id:"36", word:"むつかし", answer:"不快だ"},
+{id:"37", word:"あからさまなり", answer:"ちょっと"},
+{id:"38", word:"おろかなり", answer:"いい加減だ"},
+{id:"39", word:"いたづらなり", answer:"無駄だ"},
+{id:"40", word:"て", answer:"筆跡"},
+{id:"41", word:"うへ", answer:"天皇"},
+{id:"42", word:"ついで", answer:"順序"},
+{id:"43", word:"やう", answer:"様子"},
+{id:"44", word:"けしき", answer:"様子"},
+{id:"45", word:"としごろ", answer:"長年"},
+{id:"46", word:"おと", answer:"便り"},
+{id:"47", word:"かげ", answer:"光"},
+{id:"48", word:"つとめて", answer:"早朝"},
+{id:"49", word:"さすがに", answer:"そうはいうもののやはり"},
+{id:"50", word:"なほ", answer:"やはり"},
+{id:"51", word:"やうやう", answer:"次第に"},
+{id:"52", word:"そこら", answer:"たくさん"},
+{id:"53", word:"わざと", answer:"正式に"},
+{id:"54", word:"やがて", answer:"そのまま"},
+{id:"55", word:"すなわち", answer:"すぐに"},
+{id:"56", word:"みる", answer:"結婚する"},
+{id:"57", word:"あふ", answer:"結婚する"},
+{id:"58", word:"よばふ", answer:"求婚する"},
+{id:"59", word:"ときめく", answer:"寵愛を受ける"},
+{id:"60", word:"にほふ", answer:"美しく輝く"},
+{id:"61", word:"うつろふ", answer:"色褪せる"},
+{id:"62", word:"やつる", answer:"地味な服装になる"},
+{id:"63", word:"おこなふ", answer:"勤行する"},
+{id:"64", word:"かしづく", answer:"大切に育てる"},
+{id:"65", word:"あそぶ", answer:"管弦などの遊びをする"},
+{id:"66", word:"おくる", answer:"先立たれる"},
+{id:"67", word:"いむ", answer:"忌み嫌う"},
+{id:"68", word:"しほたる", answer:"濡れる"},
+{id:"69", word:"はつ", answer:"終わる"},
+{id:"70", word:"やむごとなり", answer:"たいそう尊い"},
+{id:"71", word:"すきずきし", answer:"風流だ"},
+{id:"72", word:"おほけなし", answer:"身分不相応だ"},
+{id:"73", word:"おぼつかなし", answer:"はっきりしない"},
+{id:"74", word:"かごとがまし", answer:"恨みがましい様子だ"},
+{id:"75", word:"いまめかし", answer:"現代風だ"},
+{id:"76", word:"そこはかとなし", answer:"とりとめもない"},
+{id:"77", word:"くちをし", answer:"残念だ"},
+{id:"78", word:"きよらなり", answer:"上品で美しい"},
+{id:"79", word:"つれづれなり", answer:"所在ない"},
+{id:"80", word:"むげなり", answer:"全くひどい"},
+{id:"81", word:"ふみ", answer:"書物"},
+{id:"82", word:"おほやけ", answer:"朝廷"},
+{id:"83", word:"くもい", answer:"宮中"},
+{id:"84", word:"みやび", answer:"風雅"},
+{id:"85", word:"あいぎやう", answer:"かわいらしい"},
+{id:"86", word:"ざえ", answer:"学問"},
+{id:"87", word:"みち", answer:"道理"},
+{id:"88", word:"うしろみ", answer:"後見"},
+{id:"89", word:"いろ", answer:"顔色"},
+{id:"90", word:"なさけ", answer:"風流心"},
+{id:"91", word:"こころ", answer:"気持ち"},
+{id:"92", word:"ちぎり", answer:"約束"},
+{id:"93", word:"ほい（ほんい）", answer:"本来の志"},
+{id:"94", word:"よ", answer:"現世"},
+{id:"95", word:"いる", answer:"すわる"},
+{id:"96", word:"ぐす", answer:"備える"},
+{id:"97", word:"いそぐ", answer:"準備する"},
+{id:"98", word:"もうく", answer:"用意する"},
+{id:"99", word:"ねぶ", answer:"おとなびる"},
+{id:"100", word:"およすく、およずく、およすぐ", answer:"成長する"},
+{id:"101", word:"やる", answer:"行かせる"},
+{id:"102", word:"おこす", answer:"送ってくる"},
+{id:"103", word:"はかなし", answer:"頼りない"},
+{id:"104", word:"はかばかし", answer:"はっきりしている"},
+{id:"105", word:"いとほし", answer:"かわいそうだ"},
+{id:"106", word:"らうたし", answer:"かわいらしい"},
+{id:"107", word:"かしこし", answer:"恐れ多い"},
+{id:"108", word:"かたじけなし", answer:"恐れ多い"},
+{id:"109", word:"こころづきなし", answer:"気にくわない"},
+{id:"110", word:"つぎづきし", answer:"似つかわしい"},
+{id:"111", word:"になし", answer:"たぐいない"},
+{id:"112", word:"またなし", answer:"またとない"},
+{id:"113", word:"あはれ", answer:"ああ、しみじみと心に沁みる"},
+{id:"114", word:"をかし", answer:"趣がある"},
+{id:"115", word:"おもしろし", answer:"趣がある"},
+{id:"116", word:"あへなし", answer:"どうしようもない"},
+{id:"117", word:"あいなし", answer:"おもしろくない"},
+{id:"118", word:"よろし", answer:"適当だ"},
+{id:"119", word:"わろし", answer:"よくない"},
+{id:"120", word:"あし", answer:"悪い"},
+{id:"121", word:"はしたなし", answer:"間が悪い"},
+{id:"122", word:"なかなかなり", answer:"中途半端だ"},
+{id:"123", word:"おぼろげなり", answer:"並一通りだ"},
+{id:"124", word:"なべて", answer:"一般に"},
+{id:"125", word:"あてなり", answer:"身分が高い"},
+{id:"126", word:"いうなり", answer:"優美だ"},
+{id:"127", word:"えんなり", answer:"優美だ"},
+{id:"128", word:"あらはなり", answer:"丸見えだ"},
+{id:"129", word:"みそかなり", answer:"こっそり"},
+{id:"130", word:"まめなり", answer:"忠実だ"},
+{id:"131", word:"あだなり", answer:"浮気だ"},
+{id:"132", word:"ことわり", answer:"道理"},
+{id:"133", word:"わりなし", answer:"わけがわからない"},
+{id:"134", word:"よし", answer:"由緒"},
+{id:"135", word:"よしなし", answer:"つまらない"},
+{id:"136", word:"ゆえ", answer:"理由"},
+{id:"137", word:"こと", answer:"言葉"},
+{id:"138", word:"ことなり", answer:"他と違っている"},
+{id:"139", word:"ひがこと", answer:"間違い"},
+{id:"140", word:"ひがひがし", answer:"ひねくれている"},
+{id:"141", word:"おもて", answer:"面目"},
+{id:"142", word:"かたち", answer:"容貌"},
+{id:"143", word:"げに", answer:"本当に"},
+{id:"144", word:"けに", answer:"いっそうはなはだしく"},
+{id:"145", word:"いさ", answer:"さぁ"},
+{id:"146", word:"いざ", answer:"さぁ"},
+{id:"147", word:"いで", answer:"さぁ"},
+{id:"148", word:"したたむ", answer:"処理する"},
+{id:"149", word:"たばかる", answer:"策をめぐらす"},
+{id:"150", word:"ものす", answer:"ある"},
+{id:"151", word:"さる", answer:"避ける"},
+{id:"152", word:"かる", answer:"離れる"},
+{id:"153", word:"わたる", answer:"通る"},
+{id:"154", word:"さかし", answer:"賢い"},
+{id:"155", word:"いみじ", answer:"はなはだしい"},
+{id:"156", word:"いたし", answer:"はなはだしい"},
+{id:"157", word:"しどけなし", answer:"だらしない"},
+{id:"158", word:"ゆゆし", answer:"不吉だ"},
+{id:"159", word:"ゆかし", answer:"したい"},
+{id:"160", word:"すごし", answer:"もの寂しい"},
+{id:"161", word:"めざまし", answer:"心外だ"},
+{id:"162", word:"ところせし", answer:"窮屈だ"},
+{id:"163", word:"かどかどし", answer:"才気がある"},
+{id:"164", word:"さうなし", answer:"たぐいない"},
+{id:"165", word:"あなづらはし", answer:"軽んじやすい"},
+{id:"166", word:"ねたし", answer:"癪だ"},
+{id:"167", word:"うし", answer:"つらい"},
+{id:"168", word:"こころもとなし", answer:"気がかりだ"},
+{id:"169", word:"こまやかなり", answer:"濃い"},
+{id:"170", word:"あながちなり", answer:"一途だ"},
+{id:"171", word:"ねんごろなり", answer:"一途だ"},
+{id:"172", word:"なほざりなり", answer:"いい加減だ"},
+{id:"173", word:"うちつけなり", answer:"とたんに"},
+{id:"174", word:"すぐよかなり", answer:"しっかりしている"},
+{id:"175", word:"おいらかなり", answer:"おっとりしている"},
+{id:"176", word:"かたくななり", answer:"頑固だ"},
+{id:"177", word:"すずろなり", answer:"むやみに"},
+{id:"178", word:"かた", answer:"方法"},
+{id:"179", word:"ほど", answer:"時間"},
+{id:"180", word:"たより", answer:"よりどころ"},
+{id:"181", word:"うたて", answer:"ひどく"},
+{id:"182", word:"おのづから", answer:"自然と"},
+{id:"183", word:"いかで", answer:"どのようにか"},
+{id:"184", word:"いかが", answer:"どのようにか"},
+{id:"185", word:"など", answer:"どうしてか"},
+{id:"186", word:"なでふ", answer:"どうしてか"},
+{id:"187", word:"おはす", answer:"いらっしゃる"},
+{id:"188", word:"おほす", answer:"おっしゃる"},
+{id:"189", word:"きこしめす", answer:"お聞きになる"},
+{id:"190", word:"めす", answer:"お呼びになる"},
+{id:"191", word:"おぼす", answer:"お思いになる"},
+{id:"192", word:"しろしめす", answer:"ご存じである"},
+{id:"193", word:"おほとのごもる", answer:"おやすみになる"},
+{id:"194", word:"あそばす", answer:"演奏なさる"},
+{id:"195", word:"ごらんず", answer:"ご覧になる"},
+{id:"196", word:"きこゆ", answer:"申し上げる"},
+{id:"197", word:"そうす", answer:"申し上げる"},
+{id:"198", word:"しのぶ", answer:"我慢する"},
+{id:"199", word:"すまふ", answer:"争う"},
+{id:"200", word:"おぼゆ", answer:"自然と思われる"}
+];
+
+
+    let questions = [];
+    let currentIndex = 0;
+    let score = 0;
+    let answered = false;
+    let wrongs = [];
+    let currentChoice = null;
+    let finished = false;
+    let mode = "all";
+    let autoNextTimer = null;
+
+    function shuffleArray(array) {
+      return [...array].sort(() => Math.random() - 0.5);
+    }
+
+    function escapeText(text) {
+      return String(text).replace(/'/g, "&#39;").replace(/\"/g, "&quot;");
+    }
+
+    function levenshtein(a, b) {
+      const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+      for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+      for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+      for (let i = 1; i <= a.length; i++) {
+        for (let j = 1; j <= b.length; j++) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          dp[i][j] = Math.min(
+            dp[i - 1][j] + 1,
+            dp[i][j - 1] + 1,
+            dp[i - 1][j - 1] + cost
+          );
+        }
+      }
+      return dp[a.length][b.length];
+    }
+
+    function generateMisspellings(word) {
+      const list = [];
+
+      if (word.endsWith("ing")) {
+        const stem = word.slice(0, -3);
+        list.push(stem + "eing");
+        list.push(stem + "ingg");
+        list.push(stem + "in");
+        list.push(stem + "inng");
+      }
+
+      if (word.includes("oo")) list.push(word.replace("oo", "o"));
+      if (word.includes("o")) list.push(word.replace("o", "oo"));
+      if (word.includes("a")) list.push(word.replace("a", "e"));
+      if (word.includes("e")) list.push(word.replace("e", "a"));
+      if (word.includes("i")) list.push(word.replace("i", "e"));
+      if (word.includes("u")) list.push(word.replace("u", "o"));
+
+      list.push(word + "e");
+      if (word.length > 3) list.push(word.slice(0, -1));
+      if (word.length > 3) list.push(word[0] + word);
+      if (word.length > 4) list.push(word.slice(0, 2) + word[1] + word.slice(2));
+
+      return list.filter(x => x && x !== word);
+    }
+
+    function makeChoices(question) {
+      const verbNumber = question.id.split("-")[0];
+      const wrongAnswers = originalQuestions
+        .filter(q => q.id !== question.id)
+        .map(q => q.answer);
+      return shuffleArray([question.answer, ...shuffleArray(wrongAnswers).slice(0, 4)]);
+    }
+
+    function getWrongMemory() {
+      try {
+        const raw = localStorage.getItem(WRONG_KEY);
+        const ids = raw ? JSON.parse(raw) : [];
+        return Array.isArray(ids) ? ids : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function setWrongMemory(ids) {
+      const unique = [...new Set(ids)];
+      localStorage.setItem(WRONG_KEY, JSON.stringify(unique));
+      updateSavedCount();
+    }
+
+    function addWrong(id) {
+      const ids = getWrongMemory();
+      if (!ids.includes(id)) ids.push(id);
+      setWrongMemory(ids);
+    }
+
+    function removeWrong(id) {
+      const ids = getWrongMemory().filter(x => x !== id);
+      setWrongMemory(ids);
+    }
+
+    function updateSavedCount() {
+      const count = getWrongMemory().length;
+      document.getElementById("savedCount").textContent = `保存ミス ${count}`;
+      document.getElementById("wrongBtn").disabled = count === 0;
+    }
+
+    function saveState() {
+      const data = { questions, currentIndex, score, answered, wrongs, currentChoice, finished, mode };
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    }
+
+    function loadState() {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return false;
+      try {
+        const data = JSON.parse(raw);
+        if (!data.questions || !Array.isArray(data.questions) || data.questions.length === 0) return false;
+        questions = data.questions;
+        currentIndex = data.currentIndex || 0;
+        score = data.score || 0;
+        answered = data.answered || false;
+        wrongs = data.wrongs || [];
+        currentChoice = data.currentChoice || null;
+        finished = data.finished || false;
+        mode = data.mode || "all";
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function clearSave() {
+      localStorage.removeItem(SAVE_KEY);
+      if (autoNextTimer) clearTimeout(autoNextTimer);
+    }
+
+    function startQuiz(nextMode) {
+      clearSave();
+      mode = nextMode;
+
+      let source = originalQuestions;
+
+if (mode === "all") {
+  const start = Number(document.getElementById("startRange").value || 1);
+  const end = Number(document.getElementById("endRange").value || originalQuestions.length);
+
+  source = originalQuestions.filter(q => {
+    const id = Number(q.id);
+    return id >= start && id <= end;
+  });
+}
+
+if (mode === "wrong") {
+        const wrongIds = getWrongMemory();
+        source = originalQuestions.filter(q => wrongIds.includes(q.id));
+
+        if (source.length === 0) {
+          document.getElementById("card").innerHTML = `<div class="finish">保存されたミスがありません</div>`;
+          updateSavedCount();
+          return;
+        }
+      }
+
+      questions = shuffleArray(JSON.parse(JSON.stringify(source)));
+      questions.forEach(q => q.shuffledChoices = makeChoices(q));
+      currentIndex = 0;
+      score = 0;
+      answered = false;
+      wrongs = [];
+      currentChoice = null;
+      finished = false;
+      document.getElementById("startBtn").disabled = true;
+      document.getElementById("wrongBtn").disabled = true;
+      updateScore();
+      showQuestion();
+      saveState();
+    }
+
+    function showQuestion() {
+      if (!questions.length) return;
+      updateProgress();
+      updateScore();
+      const q = questions[currentIndex];
+      const modeText = mode === "wrong" ? "間違えた場所だけ" : "全問";
+      const card = document.getElementById("card");
+
+      card.innerHTML = `
+        <div class="center"><span class="mode-label">${modeText}テスト</span></div>
+        <div class="question-title">${q.word} の意味</div>
+        <div class="question-sub">${currentIndex + 1} / ${questions.length}</div>
+        <div class="choices">
+          ${q.shuffledChoices.map(choice => `
+            <button class="choice" data-choice="${escapeText(choice)}" onclick="answerQuestion('${escapeText(choice)}')">${choice}</button>
+          `).join("")}
+        </div>
+        <div class="result" id="result"></div>
+      `;
+
+      if (answered) restoreAnsweredView();
+    }
+
+    function restoreAnsweredView() {
+      const q = questions[currentIndex];
+      const result = document.getElementById("result");
+      const buttons = document.querySelectorAll(".choice");
+
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.dataset.choice === q.answer) btn.classList.add("correct");
+        if (btn.dataset.choice === currentChoice && currentChoice !== q.answer) btn.classList.add("wrong");
+      });
+
+      if (currentChoice === q.answer) {
+        result.textContent = "〇 正解！";
+        result.className = "result ok";
+      } else {
+        result.textContent = `× 不正解　正解：${q.answer}`;
+        result.className = "result ng";
+      }
+    }
+
+    function answerQuestion(choice) {
+      if (answered) return;
+      answered = true;
+      currentChoice = choice;
+
+      const q = questions[currentIndex];
+      const result = document.getElementById("result");
+      const buttons = document.querySelectorAll(".choice");
+
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        if (btn.dataset.choice === q.answer) btn.classList.add("correct");
+        if (btn.dataset.choice === choice && choice !== q.answer) btn.classList.add("wrong");
+      });
+
+      if (choice === q.answer) {
+        score++;
+        result.textContent = "〇 正解！";
+        result.className = "result ok";
+
+        if (mode === "wrong") {
+          removeWrong(q.id);
+          result.textContent = "〇 正解！ 保存ミスから削除しました";
+        }
+      } else {
+        result.textContent = `× 不正解　正解：${q.answer}`;
+        result.className = "result ng";
+        wrongs.push({ ...q, your: choice });
+        addWrong(q.id);
+      }
+
+      updateScore();
+      updateSavedCount();
+      saveState();
+      autoNextTimer = setTimeout(nextQuestion, 1000);
+    }
+
+    function nextQuestion() {
+      currentIndex++;
+      answered = false;
+      currentChoice = null;
+
+      if (currentIndex >= questions.length) {
+        finishQuiz();
+      } else {
+        showQuestion();
+        saveState();
+      }
+    }
+
+    function finishQuiz() {
+      finished = true;
+      saveState();
+      updateProgress(true);
+      document.getElementById("startBtn").disabled = false;
+      updateSavedCount();
+
+      let wrongHtml = "";
+      if (wrongs.length > 0) {
+        wrongHtml = `
+          <div class="wrong-list">
+            <b>今回間違えた問題</b><br>
+            ${wrongs.map(w => `・${w.word}：あなたの答え「${w.your}」 → 正解「${w.answer}」`).join("<br>")}
+          </div>
+        `;
+      } else {
+        wrongHtml = `<div class="wrong-list">今回のテストは全問正解です。</div>`;
+      }
+
+      const saved = getWrongMemory().length;
+      document.getElementById("card").innerHTML = `
+        <div class="finish">
+          終了！<br>
+          結果：${score} / ${questions.length}<br>
+          保存中のミス：${saved}個
+        </div>
+        ${wrongHtml}
+        <div class="next-area">
+          <button onclick="startQuiz('all')">全問もう一回</button>
+          <button onclick="startQuiz('wrong')" ${saved === 0 ? "disabled" : ""}>間違えた場所だけもう一回</button>
+        </div>
+      `;
+    }
+
+    function updateScore() {
+      const total = questions.length || originalQuestions.length;
+      document.getElementById("score").textContent = `${score} / ${total}`;
+    }
+
+    function updateProgress(done = false) {
+      const total = questions.length || originalQuestions.length;
+      const percent = done ? 100 : (currentIndex / total) * 100;
+      document.getElementById("bar").style.width = `${percent}%`;
+    }
+
+    function resetCurrentQuiz() {
+      clearSave();
+      questions = [];
+      currentIndex = 0;
+      score = 0;
+      answered = false;
+      wrongs = [];
+      currentChoice = null;
+      finished = false;
+      mode = "all";
+      document.getElementById("startBtn").disabled = false;
+      updateSavedCount();
+      document.getElementById("score").textContent = `0 / ${originalQuestions.length}`;
+      document.getElementById("bar").style.width = "0%";
+      document.getElementById("card").innerHTML = `<div class="finish">スタートを押してください</div>`;
+    }
+
+    function clearWrongMemory() {
+      localStorage.removeItem(WRONG_KEY);
+      updateSavedCount();
+      document.getElementById("card").innerHTML = `<div class="finish">保存したミスを消しました</div>`;
+    }
+
+    function init() {
+      updateSavedCount();
+      if (loadState()) {
+        updateScore();
+        document.getElementById("startBtn").disabled = !finished;
+        document.getElementById("wrongBtn").disabled = !finished;
+        if (finished) finishQuiz();
+        else showQuestion();
+      } else {
+        resetCurrentQuiz();
+      }
+      updateSavedCount();
+    }
+
+    init();
+  </script>
+</body>
+</html>
